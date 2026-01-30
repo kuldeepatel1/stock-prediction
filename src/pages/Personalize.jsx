@@ -99,28 +99,20 @@ const Personalize = () => {
   const series = useMemo(() => buildSeriesWithProjection(historical, prediction ?? undefined, sellHorizonDays), [historical, prediction, sellHorizonDays]);
 
   const recommendation = useMemo(() => {
-    if (!series || series.length === 0 || !amount || !prediction) return null;
+    if (!amount || !prediction) return null;
+    
     const predTs = new Date(prediction.year, (prediction.month || 1) - 1, prediction.day || 1).getTime();
-    const buyCandidates = series.filter(s => s.ts <= predTs);
-    if (buyCandidates.length === 0) return null;
-
-    // pick lowest price within buy window before or on prediction date
-    const buyWindowStart = predTs - buyWindowDays * 24 * 60 * 60 * 1000;
-    let windowedBuyCandidates = buyCandidates.filter(s => s.ts >= buyWindowStart && s.ts <= predTs);
-    if (windowedBuyCandidates.length === 0) {
-      // fallback to full buyCandidates if window is empty
-      windowedBuyCandidates = buyCandidates;
-    }
-    let bestBuy = windowedBuyCandidates[0];
-    for (const p of windowedBuyCandidates) if (p.value < bestBuy.value) bestBuy = p;
-
+    
+    // Use predicted price as the buy recommendation
+    const buyAt = { ts: predTs, value: prediction.predictedPrice, isPrediction: true };
+    
     // look for sell opportunities after prediction within horizon
     const sellWindowEnd = predTs + sellHorizonDays * 24 * 60 * 60 * 1000;
-    const sellCandidates = series.filter(s => s.ts >= predTs && s.ts <= sellWindowEnd);
+    const sellCandidates = (series || []).filter(s => s.ts >= predTs && s.ts <= sellWindowEnd && s.isPrediction);
     if (sellCandidates.length === 0) return {
-      buyAt: bestBuy,
+      buyAt,
       sellAt: { ts: predTs, value: prediction.predictedPrice, isPrediction: true },
-      quantity: Math.floor(Number(amount) / bestBuy.value) || 0,
+      quantity: Math.floor(Number(amount) / buyAt.value) || 0,
       expectedProfit: 0,
       profitPerUnit: 0,
     };
@@ -128,12 +120,12 @@ const Personalize = () => {
     let bestSell = sellCandidates[0];
     for (const p of sellCandidates) if (p.value > bestSell.value) bestSell = p;
 
-    const quantity = Math.floor(Number(amount) / bestBuy.value) || 0;
-    const profitPerUnit = bestSell.value - bestBuy.value;
+    const quantity = Math.floor(Number(amount) / buyAt.value) || 0;
+    const profitPerUnit = bestSell.value - buyAt.value;
     const expectedProfit = quantity * profitPerUnit;
 
     return {
-      buyAt: bestBuy,
+      buyAt,
       predictionPoint: { ts: predTs, value: prediction.predictedPrice },
       sellAt: bestSell,
       quantity,
