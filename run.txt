@@ -1,0 +1,10 @@
+ curl http://localhost:8000/
+ 
+ 
+ backend> cd "c:\Users\kuldeep\Stock-Price-Prediction-System"
+PS C:\Users\kuldeep\Stock-Price-Prediction-System> python -m pip install -r c:/Users/kuldeep/Stock-Price-Prediction-System/backend/requirements.txt 
+ backend run 
+
+ python run_backend.py
+ npm run dev
+ cd c:/Users/kuldeep/Stock-Price-Prediction-System && python run_backend.py

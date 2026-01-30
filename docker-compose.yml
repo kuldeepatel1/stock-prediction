@@ -1,0 +1,51 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+    environment:
+      - PYTHONUNBUFFERED=1
+      - FRONTEND_URL=http://localhost:5173
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile.dev
+    ports:
+      - "5173:5173"
+    volumes:
+      - type: bind
+        source: ./src
+        target: /app/src
+      - type: bind
+        source: ./public
+        target: /app/public
+      - type: bind
+        source: ./index.html
+        target: /app/index.html
+      - type: bind
+        source: ./package.json
+        target: /app/package.json
+      - type: bind
+        source: ./package-lock.json
+        target: /app/package-lock.json
+      - type: bind
+        source: ./vite.config.js
+        target: /app/vite.config.js
+      - type: bind
+        source: ./postcss.config.js
+        target: /app/postcss.config.js
+      - type: bind
+        source: ./tailwind.config.js
+        target: /app/tailwind.config.js
+      - type: volume
+        target: /app/node_modules
+    environment:
+      - VITE_API_BASE_URL=http://localhost:8000
+    depends_on:
+      - backend
+
